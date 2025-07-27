@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pop Mart 猜盲盒逻辑挑战</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+  <style>
+    body {
+      font-family: 'Comic Sans MS', 'cursive', sans-serif;
+      background: linear-gradient(to bottom, #ffe4f0, #fff0f7);
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col items-center p-4">
+  <h1 class="text-3xl text-pink-600 font-bold mb-4">🎁 Pop Mart 猜盲盒逻辑挑战</h1>
+  <div id="game" class="w-full max-w-xl space-y-4"></div>
+  <button onclick="submitAnswers()" class="mt-6 px-6 py-2 bg-pink-500 text-white rounded-full shadow-lg">提交答案</button>
+  <button onclick="resetGame()" class="mt-2 text-sm text-pink-600">再来一次</button>
+  <div id="result" class="mt-6 text-center text-lg font-semibold text-gray-800"></div>
+  <div class="mt-4">
+    <button onclick="downloadScreenshot()" class="px-4 py-2 text-sm bg-yellow-300 rounded-full shadow">📸 保存我的成绩截图</button>
+  </div>
+
+  <script>
+    const roles = ['爱', '欢乐', '忠诚', '宁静', '希望', '幸运'];
+    let boxes = [];
+
+    function shuffle(arr) {
+      return arr.sort(() => Math.random() - 0.5);
+    }
+
+    function generateGame() {
+      const assigned = shuffle([...roles]);
+      boxes = assigned.map((role, i) => {
+        const excludes = shuffle(roles.filter(r => r !== role)).slice(0, 2);
+        return { id: i + 1, answer: role, excludes, guess: '' };
+      });
+    }
+
+    function renderGame() {
+      const container = document.getElementById('game');
+      container.innerHTML = '';
+      boxes.forEach(box => {
+        const div = document.createElement('div');
+        div.className = 'bg-white rounded-xl shadow p-4 border border-pink-200';
+        div.innerHTML = `
+          <h2 class="text-xl font-bold text-pink-700">盒子 ${box.id}</h2>
+          <p class="text-sm text-gray-600 mb-2">❌ 不包含：<b>${box.excludes[0]}</b>、<b>${box.excludes[1]}</b></p>
+          <select onchange="handleGuess(${box.id}, this.value)" class="w-full border border-gray-300 rounded px-2 py-1">
+            <option value="">选择角色</option>
+            ${roles.map(r => `<option value="${r}">${r}</option>`).join('')}
+          </select>
+          <p id="feedback-${box.id}" class="mt-2 text-sm font-bold"></p>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    function handleGuess(id, value) {
+      const box = boxes.find(b => b.id === id);
+      if (box) box.guess = value;
+    }
+
+    function submitAnswers() {
+      let correct = 0;
+      boxes.forEach(box => {
+        const feedback = document.getElementById(`feedback-${box.id}`);
+        if (box.guess === box.answer) {
+          feedback.textContent = '✅ 正确！';
+          feedback.className = 'mt-2 text-green-600 font-bold';
+          correct++;
+        } else {
+          feedback.textContent = `❌ 正确是 ${box.answer}`;
+          feedback.className = 'mt-2 text-red-500 font-bold';
+        }
+      });
+      document.getElementById('result').textContent = `你答对了 ${correct}/6 个盒子 🎉`;
+    }
+
+    function resetGame() {
+      document.getElementById('result').textContent = '';
+      generateGame();
+      renderGame();
+    }
+
+    function downloadScreenshot() {
+      html2canvas(document.body).then(canvas => {
+        const link = document.createElement('a');
+        link.download = 'popmart-screenshot.png';
+        link.href = canvas.toDataURL();
+        link.click();
+      });
+    }
+
+    // 初始化
+    generateGame();
+    renderGame();
+  </script>
+</body>
+</html>
